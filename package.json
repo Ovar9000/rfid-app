@@ -1,0 +1,37 @@
+{
+  "name": "ph-quake-3d",
+  "version": "1.0.0",
+  "description": "3D visualization of M4.0+ earthquakes in the Philippines",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc",
+    "build:coastline": "node scripts/build-coastline.mjs"
+  },
+  "keywords": [
+    "earthquake",
+    "philippines",
+    "threejs",
+    "usgs",
+    "3d"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.186.1",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
+  },
+  "devDependencies": {
+    "@types/geojson": "^7946.0.16",
+    "@types/three": "^0.186.0",
+    "@types/topojson-client": "^3.1.5",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.4"
+  },
+  "private": true,
+  "type": "module"
+}
