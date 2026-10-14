@@ -41,6 +41,7 @@ src/
     panel.ts           Filters, stats, legend, event list, details card, tooltip
     format.ts          PHT time formatting, coordinates, escaping
   main.ts              Wires data → filter → scene + UI
+scraper/                       Python PHIVOLCS bulletin scraper (see below)
 scripts/build-coastline.mjs   Regenerates the coastline from Natural Earth 1:10m (world-atlas)
 tests/                         Vitest unit tests
 .github/workflows/deploy.yml   CI (test + build) and GitHub Pages deploy on main
@@ -49,12 +50,38 @@ tests/                         Vitest unit tests
 ## Extending
 
 - **Another data source (e.g. PHIVOLCS):** implement `QuakeSource` in `src/data/` and swap
-  `source` in `src/main.ts`. PHIVOLCS has no public JSON API, so it would need a small backend or
-  scraper proxy, plus CORS. The M4+ filter still applies, because `filterQuakes` runs on all data.
+  `source` in `src/main.ts`. PHIVOLCS has no public JSON API. The scraper in `scraper/` can be run on a
+  schedule to publish a JSON file that a `QuakeSource` could read. The M4+ filter still applies, because
+  `filterQuakes` runs on all data.
 - **Different region or threshold:** edit `REGION` / `MIN_MAGNITUDE` in `src/config.ts`. If you change
   the region, also update the box in `scripts/build-coastline.mjs` and run `npm run build:coastline`.
 - **Fault lines / trenches:** add a layer class like `QuakeLayer` that takes GeoJSON lines and
   projects them with `project()`.
+
+## PHIVOLCS scraper (Python)
+
+`scraper/phivolcs_scraper.py` scrapes the latest bulletin table from
+[earthquake.phivolcs.dost.gov.ph](https://earthquake.phivolcs.dost.gov.ph/) into a pandas DataFrame and
+writes `phivolcs_earthquakes.csv` (UTF-8).
+
+```bash
+cd scraper
+pip install -r requirements.txt
+python phivolcs_scraper.py                     # all rows, prints the top 5
+python phivolcs_scraper.py --min-magnitude 4   # M4.0+ only, matching the site
+python -m unittest discover -s tests           # offline tests
+```
+
+- It finds the table by its header text (date/time, latitude, longitude, depth, magnitude, location), not by CSS class.
+  This skips navigation and layout tables.
+- Times are read as Philippine Standard Time and written as ISO 8601 in two columns: `datetime_pst` (+08:00) and `datetime_utc`.
+- Coordinates become signed decimals (N/E positive, S/W negative). Depth is an int, magnitude a float.
+- `bulletin_url` is the absolute link to each event's bulletin page. PHIVOLCS writes these links with backslashes,
+  which the scraper converts to forward slashes.
+- Requests use a browser User-Agent, a 20 s timeout and 3 retries with backoff. All failures raise `ScrapeError`,
+  and the CLI exits with code 1.
+- The PHIVOLCS TLS certificate chain has been incomplete at times. Certificate checking stays on by default;
+  `--insecure` turns it off explicitly, if you choose to.
 
 ## Deploying
 
